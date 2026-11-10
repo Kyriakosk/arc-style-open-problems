@@ -1,0 +1,211 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{hyperref}
+\usepackage{cleveref}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{question}{Question}
+\crefname{question}{Question}{Questions}
+\crefname{conjecture}{Conjecture}{Conjectures}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\newcommand{\NP}{\mathsf{NP}}
+\newcommand{\coNP}{\mathsf{coNP}}
+\newcommand{\AM}{\mathsf{AM}}
+
+\title{ARC NCP: Adaptations for Anthropic}
+\author{}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+% DRAFT (Claude, 2026-11-10). Sources: Marcus's report "Digesting the NCP" (ILIAD Artifacts/First Artifact.md),
+% Zulip #AskAnthropic and #Personal > Marcus Wilhelm. Items marked TODO need Marcus's input.
+
+The Alignment Research Center (ARC) hopes to explain the behaviour of trained neural networks by short, machine-checkable descriptions of their internal structure, even where no formal proof of that behaviour exists. As a test of whether such explanations should exist at all, Neyman~\cite{neyman2025} formulated a computational version of the principle that an outrageous coincidence in mathematics has a reason. Write $X_0 \subseteq \{0,1\}^{3n}$ for the $2^{2n}$ strings ending in $n$ zeros. For a reversible circuit $C \colon \{0,1\}^{3n} \to \{0,1\}^{3n}$, let $P(C)$ be the property that $C(x) \notin X_0$ for every $x \in X_0$. We call this property the \emph{coincidence}. Let $U_n$ be the distribution of random reversible circuits with $n^2$ layers, in which each layer partitions the $3n$ wires uniformly at random into $n$ triples and applies to each triple an independent bijection of $\{0,1\}^3$ chosen uniformly among all $8!$~\cite[footnote~3]{neyman2025}.
+
+\begin{conjecture}[{No-coincidence principle~\cite{neyman2025}}]\label{conj:ncp}
+There is a polynomial-time verifier $V$ that takes as input a reversible circuit $C \colon \{0,1\}^{3n} \to \{0,1\}^{3n}$ and a string $\pi$, such that for every $n$:
+\begin{enumerate}
+\item (completeness) for every $C$ with $P(C)$ there is a $\pi$ of length polynomial in the size of $C$ with $V(C, \pi) = 1$;
+\item (soundness) for at least $99\%$ of the circuits $C \sim U_n$, there is no $\pi$ with $V(C, \pi) = 1$.
+\end{enumerate}
+\end{conjecture}
+
+If a circuit $C$ behaved like a uniformly random permutation, each of the $2^{2n}$ inputs in $X_0$ would land in $X_0$ with probability $2^{-n}$, so $P(C)$ would hold with probability about $(1 - 2^{-n})^{2^{2n}} \approx e^{-2^n}$. The set of circuits with the property $P$ is $\coNP$-complete: it is in $\coNP$, since an input $x \in X_0$ with $C(x) \in X_0$ witnesses that $P(C)$ fails, and it is $\coNP$-hard~\cite{neyman2025}. Soundness only asks the verifier to reject most random circuits, not every circuit without $P$. If it had to accept exactly the circuits with $P$, the set of these circuits would be in $\NP$, so this stronger statement is equivalent to $\NP = \coNP$. In particular, $\NP = \coNP$ implies \Cref{conj:ncp}, and a refutation of \Cref{conj:ncp} would prove $\NP \neq \coNP$. Closely related \emph{heuristic proof systems} were studied by Itsykson and Sokolov~\cite{itsykson-sokolov}.
+
+Andrea Lincoln proposed the following analogue of \Cref{conj:ncp} for Erd\H{o}s--R\'enyi graphs (unpublished).
+% TODO(Marcus): does Andrea require certificates of quasi-linear length in n^2 (as in the report) or just polynomial length?
+For a constant $c$, let $k = k(n) = \lceil c \log_2 n \rceil$, and let $Q_k(G)$ be the property that the graph $G$ has no clique of size $k$; this is the coincidence for graphs. The clique number of $G(n, 1/2)$ is $(2 - o(1)) \log_2 n$ with high probability~\cite{matula1976,bollobas-erdos1976}, so for $c < 2$ the property $Q_k$ is rare.
+
+\begin{conjecture}[Clique NCP]\label{conj:clique}
+Let $1 < c < 2$. There is a polynomial-time verifier $V$ such that for every $n$:
+\begin{enumerate}
+\item (completeness) for every graph $G$ on $n$ vertices with $Q_k(G)$ there is a $\pi$ of length polynomial in $n$ with $V(G, \pi) = 1$;
+\item (soundness) for at least $99\%$ of the graphs $G \sim G(n, 1/2)$, there is no $\pi$ with $V(G, \pi) = 1$.
+\end{enumerate}
+\end{conjecture}
+
+\paragraph{Why $1 < c < 2$.} For $c < 1$, the greedy algorithm finds a clique of size $(1 - o(1)) \log_2 n$ with high probability~\cite{grimmett-mcdiarmid}, so a verifier can run it and accept if it fails, with no certificate. For $1 < c < 2$, cliques of size $k$ exist with high probability, but no polynomial-time algorithm is known that finds a clique of size $(1 + \delta) \log_2 n$ for any constant $\delta > 0$. Like $P$, the property $Q_k$ is in $\coNP$, with a $k$-clique as the witness that it fails, so a refutation of \Cref{conj:clique} would also prove $\NP \neq \coNP$. Unlike $P$, it can be decided in time $n^{O(\log n)}$ by exhaustive search, so it is not $\coNP$-hard unless $\coNP$ has quasi-polynomial-time algorithms.
+
+\section*{Main questions}
+
+\begin{question}\label{q:ncp}
+Prove or refute \Cref{conj:ncp}. A refutation may assume any standard or otherwise well-motivated complexity-theoretic, cryptographic or average-case hardness assumption.
+\end{question}
+
+\begin{question}\label{q:clique}
+Prove or refute \Cref{conj:clique}, for some or all $c \in (1, 2)$, again possibly under a hardness assumption.
+\end{question}
+
+Since a refutation of either conjecture would prove $\NP \neq \coNP$, an unconditional refutation is out of reach, and a refutation from an assumption is the natural goal.
+
+\section*{Background on the Clique NCP}
+
+We record three observations on \Cref{conj:clique}: a natural certificate that is not complete, a relaxation that is too easy, and an approach that runs into a known barrier.
+
+\paragraph{Colourings.} A proper colouring of $G$ with $k - 1$ colours certifies $Q_k(G)$, because a clique has at most one vertex of each colour. The verifier that accepts such colourings is sound, since $G(n, 1/2)$ has chromatic number $(1 + o(1))\, n/(2 \log_2 n)$ with high probability~\cite{bollobas1988}. It is not complete: there are graphs with no triangle and arbitrarily large chromatic number~\cite{erdos1959}, so some graphs with $Q_k$ are not $(k-1)$-colourable.
+
+\paragraph{False negatives.} Suppose completeness is weakened so that the verifier may reject a small fraction of the graphs with $Q_k$. Then the following verifier, which uses no certificate, appears to suffice: accept $G$ if it has at least $2n$ fewer edges than $\binom{n}{2}/2$. By Hoeffding's inequality, at most an $e^{-16}$ fraction of all graphs is accepted. Conditioning on $Q_k$ should lower the number of edges by far more than $2n$, so one expects that only a vanishing fraction of the graphs with $Q_k$ is rejected; we have not checked a proof.
+% TODO(Marcus): cite the ChatGPT write-up properly or drop; it is not formally checked.
+
+\paragraph{Hypergraph containers.} Let $\mathcal{H}$ be the hypergraph whose vertices are the $N = \binom{n}{2}$ pairs of vertices of $K_n$, and whose hyperedges are the edge sets of the $k$-cliques of $K_n$. A graph $G$ has the property $Q_k$ exactly when its edge set is an independent set of $\mathcal{H}$. Container lemmas~\cite{bms2015,saxton-thomason2015} state that, if the hyperedges of a uniform hypergraph are spread out well enough, there is a small family $\mathcal{C}$ of vertex sets, the containers, with three properties: every independent set lies in some container; every container contains few hyperedges; and the container of an independent set $I$ is determined by a small subset of $I$, its fingerprint. This suggests a verifier for \Cref{conj:clique} whose certificate is a fingerprint $T \subseteq E(G)$; the verifier computes the container $C(T)$ and accepts if $E(G) \subseteq C(T)$. Completeness follows from the first and third property, provided the container can be computed from the fingerprint in polynomial time, as in the algorithmic proofs of the lemmas. For soundness, a union bound gives
+\[
+    \Pr_{G \sim G(n, 1/2)}\big[\exists\, C \in \mathcal{C} : E(G) \subseteq C\big] \leq |\mathcal{C}| \cdot \max_{C \in \mathcal{C}} 2^{-(N - |C|)},
+\]
+A container with few $k$-cliques must miss many of the $N$ pairs (a supersaturation statement), so $N - |C|$ is large; soundness needs $\log_2 |\mathcal{C}|$ to be smaller than $N - |C|$ by a constant margin, for every container $C$. The obstacle is that $\mathcal{H}$ has uniformity $\binom{k}{2} = \Theta(\log^2 n)$. In the known container lemmas, the logarithm of the number of containers grows quadratically in the uniformity, and Campos and Samotij~\cite{campos-samotij} identify this as a natural barrier for the second-moment type arguments behind these lemmas. Accordingly, the best known application to cliques, which shows that almost all $K_{r+1}$-free graphs are $r$-partite, works only for $r$ much smaller than $\log n$~\cite{balogh-samotij2020}. Applying containers for $k = c \log_2 n$ seems to need new ideas specific to cliques.
+% TODO(Marcus): Kyriakos linked a Combinatorica 2026 paper (doi 10.1007/s00493-026-00214-1) for the barrier; I could not open it and cite the arXiv preprint of Campos--Samotij, which states the second-moment barrier. Check that they are the same paper.
+% TODO(Marcus): coordinate with Alexander and Kyriakos, who Louis says are also preparing problems; avoid duplicates.
+
+\section*{Further questions}
+
+The following questions are partial steps towards \Cref{q:ncp,q:clique}.
+
+\subsection*{How rare are the coincidences?}
+
+Completeness and soundness together force the coincidence to have probability at most $1\%$ for every $n$, so each conjecture is false unless its coincidence is rare. For both coincidences, the naive heuristic that treats the relevant events as independent is far from the truth, because structured objects have the property for a visible reason and are much more likely than the heuristic predicts.
+
+\emph{Circuits.} Fix one of the last $n$ wires. In each layer exactly one gate acts on it, and this gate is a uniformly random bijection of $\{0,1\}^3$. With probability $(4!)^2/8! = 1/70$, the gate maps the four inputs in which this wire is $0$ onto the four outputs in which it is $1$; with the same probability, it maps the four inputs in which the wire is $1$ onto the four outputs in which it is $1$. Suppose the gate in the first layer does the former and the gates in all later layers do the latter. On every input from $X_0$ the wire starts as $0$, so it ends as $1$, and $C$ has the property $P$. The $n^2$ layers are independent, so
+\[
+    p_n := \Pr_{C \sim U_n}[P(C)] \geq 70^{-n^2} \approx 2^{-6.13\, n^2}.
+\]
+No upper bound on $p_n$ is known to us, not even $p_n \leq 1\%$.
+
+\emph{Cliques.} Let $1 < c < 2$ and $q_n := \Pr_{G \sim G(n, 1/2)}[Q_k(G)]$. The expected number of $k$-cliques in $G(n, 1/2)$ is $\binom{n}{k} 2^{-\binom{k}{2}} = n^{\Theta(\log n)}$, so treating the $k$-cliques as independent would suggest $q_n \approx \exp(-n^{\Theta(\log n)})$. Again structured graphs are far more likely: every $(k-1)$-partite graph has the property $Q_k$, and the graphs that are $(k-1)$-partite with respect to one fixed balanced partition already have probability $2^{-(1 + o(1))\, n^2/(2(k-1))}$. On the other hand, Janson's inequality~\cite[Chapter~8]{alon-spencer} gives an upper bound. Hence
+\[
+    2^{-(1 + o(1))\, n^2/(2(k-1))} \;\leq\; q_n \;\leq\; \exp\big(-\Omega(n^2/\log^4 n)\big),
+\]
+so $\log(1/q_n)$ is known only up to a factor of order $\log^3 n$. For $k - 1 = r$ much smaller than $\log n$, almost all $K_{r+1}$-free graphs on $n$ vertices are $r$-partite~\cite{bbclms,balogh-samotij2020}, which determines the probability of being $K_{r+1}$-free up to a factor $2^{o(n^2/r)}$; our $k = c \log_2 n$ lies outside this range.
+
+\begin{question}\label{q:rarity}
+\begin{enumerate}
+\item Prove upper and lower bounds on $p_n$ that are as close as possible. Is $p_n \to 0$? Is $p_n \leq 2^{-\Omega(n)}$? Is $p_n = 2^{-\Theta(n^2)}$, and if so, what is $\lim_{n \to \infty} -\frac{1}{n^2} \log_2 p_n$?
+\item For $1 < c < 2$, determine $\log(1/q_n)$ up to a constant factor, and ideally up to a factor $1 + o(1)$. Is $q_n = 2^{-(1 + o(1))\, n^2/(2(k-1))}$, that is, are $(k-1)$-partite graphs the dominant reason for having no $k$-clique, as in~\cite{bbclms} for smaller cliques?
+\item In both cases, which structured objects dominate? Is there an explicit $\NP$ set $S_n$ of objects with the coincidence (such as circuits with a stuck wire, or graphs given together with a proper $(k-1)$-colouring) whose probability is $p_n^{1 + o(1)}$, respectively $q_n^{1 + o(1)}$?
+\end{enumerate}
+\end{question}
+
+\subsection*{Weaker soundness, and how much $99\%$ matters}
+
+For $\varepsilon = \varepsilon(n) \in (0, 1)$, write $\mathrm{NCP}(\varepsilon)$ for \Cref{conj:ncp} with soundness ``for at least a $1 - \varepsilon$ fraction of the circuits $C \sim U_n$, there is no $\pi$ with $V(C, \pi) = 1$'', so that \Cref{conj:ncp} is $\mathrm{NCP}(1/100)$, and define $\mathrm{Clique}(\varepsilon)$ from \Cref{conj:clique} in the same way.
+
+A proof of $\mathrm{NCP}(\varepsilon)$ for some $\varepsilon$ much larger than $1/100$ would already be a good partial answer to \Cref{q:ncp}. Even this is not trivial: the verifier has to reject a non-negligible fraction of random circuits with certainty, while accepting every circuit with $P$. A verifier that rejects only when it finds, among polynomially many inputs $x \in X_0$, one with $C(x) \in X_0$, rejects only about a $\mathrm{poly}(n) \cdot 2^{-n}$ fraction of random circuits, if these behave like random permutations.
+
+In the other direction, De Bona~\cite{debona2025} showed that $\mathrm{NCP}(1/100)$ implies $\mathrm{NCP}(\varepsilon)$ for every fixed $\varepsilon > 0$ under an additional assumption on polynomial-time reductions to the set of circuits without $P$;\footnote{De Bona calls it \emph{reduction-regularity}. Roughly, it asks for a fixed $\delta > 0$ such that every $\NP$ set containing at least $99\%$ of the circuits without $P$ has a polynomial-time reduction to the set of circuits without $P$ whose images keep at least a $\delta$ fraction of their probability under $U_n$; see~\cite{debona2025} for the precise statement.} the running time of the amplified verifier grows exponentially in $1/\varepsilon$ unless the reductions have degree $1$.
+
+\begin{question}\label{q:soundness}
+\begin{enumerate}
+\item For which $\varepsilon < 1$ can $\mathrm{NCP}(\varepsilon)$ be proved, unconditionally or from a standard assumption? In particular, does $\mathrm{NCP}(1 - 1/\mathrm{poly}(n))$ hold, or $\mathrm{NCP}(1/2)$? The goal is a verifier with soundness as large as possible; at $\varepsilon = 1/100$ this is \Cref{q:ncp} itself. The same questions for $\mathrm{Clique}(\varepsilon)$.
+\item Does $\mathrm{NCP}(1/100)$ imply $\mathrm{NCP}(\varepsilon)$ for every constant $\varepsilon > 0$, without additional assumptions?
+\item For which functions $\varepsilon(n) \to 0$ does $\mathrm{NCP}(\varepsilon(n))$ follow from \Cref{conj:ncp}, or from a standard complexity-theoretic assumption together with \Cref{conj:ncp}?
+\item Is there a sequence of distributions $D_n$ on reversible circuits with $\Pr_{D_n}[P] \to 0$ for which the statements $\mathrm{NCP}(\varepsilon)$, defined with $D_n$ in place of $U_n$, are not all equivalent for constant $\varepsilon \in (0, 1)$, conditional on a standard assumption such as $\coNP \not\subseteq \NP/\mathrm{poly}$?
+\end{enumerate}
+\end{question}
+
+\subsection*{Towards a refutation}
+
+\begin{question}\label{q:refutation}
+\begin{enumerate}
+\item \emph{Assumptions.} Under which hypotheses do the conjectures fail? Candidates are worst-case (an infinite polynomial hierarchy, $\coNP \not\subseteq \NP/\mathrm{poly}$), cryptographic (one-way functions, pseudorandom permutations, indistinguishability obfuscation) or average-case (hardness of finding or certifying cliques in $G(n, 1/2)$). Conversely, for such a hypothesis $H$, is there an oracle relative to which $H$ and \Cref{conj:ncp} both hold, with circuits allowed to contain oracle gates? Such an oracle rules out relativizing proofs that $H$ refutes \Cref{conj:ncp}.
+\item \emph{Hiding a $\coNP$ fact in a random-looking circuit.} Is there a randomised polynomial-time map $f$ from Boolean formulas to circuits such that $f(\varphi, r)$ has $P$ for every unsatisfiable $\varphi$, and for satisfiable $\varphi$ the distribution of $f(\varphi, \cdot)$ gives every circuit at most $\gamma < 100$ times its probability under $U_n$? Together with \Cref{conj:ncp} such a map would put unsatisfiability in $\AM$ (Arthur draws $r$, Merlin sends a certificate for $f(\varphi, r)$), so the polynomial hierarchy would collapse~\cite{bhz1987}.
+\item \emph{Incompressible circuits.} If every circuit with $P$ has a short description, the conjecture holds: encode circuits so that $U_n$ is uniform on $2^m$ codes ($m$ need not be an integer), and suppose every circuit with $P$ is output by a program of length at most $m - t$ that runs within a fixed polynomial time bound. Then the outputs of these programs form an $\NP$ set of probability less than $2^{-t+1}$ that contains all circuits with $P$, so \Cref{conj:ncp} holds if $t \geq 8$. Conversely, does $\mathrm{NCP}(2^{-t})$ imply that every circuit with $P$ has polynomial-time nondeterministic distinguishing complexity\footnote{The length of a shortest program that, run nondeterministically within a given time bound, accepts the given string and no other string~\cite{buhrman-fortnow-laplante}. Language compression~\cite{buhrman-lee-vanmelkebeek} bounds it for members of small sets that the program can query.} at most $m - t + o(t)$? If so, a family of circuits with $P$ whose distinguishing complexity is at least $m - o(t)$ would refute $\mathrm{NCP}(2^{-t})$. Does such a family exist, for some $t(n) \leq 6.13\, n^2$?
+\item \emph{Restricted verifiers.} Fix a polynomial-size CNF formula $F_C$ that is unsatisfiable exactly when $P(C)$ holds. Is there a family of circuits with $P$ for which $F_C$ has no polynomial-size resolution refutation? More ambitiously, show that for every polynomial-time test $T$ with $\Pr_{C \sim U_n}[T(C) = 1] \leq 1\%$, the verifier that accepts if $T(C) = 1$ or if $\pi$ is a polynomial-size resolution refutation of $F_C$ is not complete. The same questions for other proof systems, such as cutting planes or sums of squares, and for $Q_k$.
+\end{enumerate}
+\end{question}
+
+\begin{thebibliography}{99}
+\bibitem{neyman2025}
+E.~Neyman,
+\newblock \emph{A computational no-coincidence principle},
+\newblock Alignment Research Center blog, 14 February 2025, \href{https://www.alignment.org/blog/a-computational-no-coincidence-principle/}{alignment.org/blog/a-computational-no-coincidence-principle}.
+\bibitem{itsykson-sokolov}
+D.~Itsykson and D.~Sokolov,
+\newblock \emph{On fast heuristic non-deterministic algorithms and short heuristic proofs},
+\newblock Fund. Inform. (2014), \href{https://doi.org/10.3233/FI-2014-1036}{doi:10.3233/FI-2014-1036}.
+\bibitem{matula1976}
+D.~W.~Matula,
+\newblock \emph{The largest clique size in a random graph},
+\newblock Technical report, Department of Computer Science, Southern Methodist University, Dallas, 1976.
+\bibitem{bollobas-erdos1976}
+B.~Bollob\'as and P.~Erd\H{o}s,
+\newblock \emph{Cliques in random graphs},
+\newblock Math. Proc. Cambridge Philos. Soc. \textbf{80} (1976), no.~3, 419--427, \href{https://doi.org/10.1017/S0305004100053056}{doi:10.1017/S0305004100053056}.
+\bibitem{grimmett-mcdiarmid}
+G.~R.~Grimmett and C.~J.~H.~McDiarmid,
+\newblock \emph{On colouring random graphs},
+\newblock Math. Proc. Cambridge Philos. Soc. \textbf{77} (1975), 313--324.
+\bibitem{bollobas1988}
+B.~Bollob\'as,
+\newblock \emph{The chromatic number of random graphs},
+\newblock Combinatorica \textbf{8} (1988), 49--55.
+\bibitem{erdos1959}
+P.~Erd\H{o}s,
+\newblock \emph{Graph theory and probability},
+\newblock Canad. J. Math. \textbf{11} (1959), 34--38.
+\bibitem{bms2015}
+J.~Balogh, R.~Morris, and W.~Samotij,
+\newblock \emph{Independent sets in hypergraphs},
+\newblock J. Amer. Math. Soc. \textbf{28} (2015), 669--709.
+\bibitem{saxton-thomason2015}
+D.~Saxton and A.~Thomason,
+\newblock \emph{Hypergraph containers},
+\newblock Invent. Math. \textbf{201} (2015), 925--992.
+\bibitem{campos-samotij}
+M.~Campos and W.~Samotij,
+\newblock \emph{Towards an optimal hypergraph container lemma},
+\newblock preprint, 2024, \href{https://arxiv.org/abs/2408.06617}{arXiv:2408.06617}.
+\bibitem{balogh-samotij2020}
+J.~Balogh and W.~Samotij,
+\newblock \emph{An efficient container lemma},
+\newblock Discrete Anal. 2020:17, \href{https://arxiv.org/abs/1910.09208}{arXiv:1910.09208}.
+\bibitem{alon-spencer}
+N.~Alon and J.~H.~Spencer,
+\newblock \emph{The Probabilistic Method}, 4th ed.,
+\newblock Wiley, 2016.
+\bibitem{bbclms}
+J.~Balogh, N.~Bushaw, M.~Collares Neto, H.~Liu, R.~Morris, and M.~Sharifzadeh,
+\newblock \emph{The typical structure of graphs with no large cliques},
+\newblock preprint, 2014, \href{https://arxiv.org/abs/1406.6961}{arXiv:1406.6961}.
+\bibitem{debona2025}
+G.~De~Bona,
+\newblock \emph{Amplifying the computational no-coincidence conjecture},
+\newblock LessWrong, 7 March 2025, \href{https://www.lesswrong.com/posts/PxhCvDSfSqJYNXtaw/amplifying-the-computational-no-coincidence-conjecture}{lesswrong.com/posts/PxhCvDSfSqJYNXtaw}.
+\bibitem{bhz1987}
+R.~B.~Boppana, J.~H{\aa}stad, and S.~Zachos,
+\newblock \emph{Does co-{NP} have short interactive proofs?},
+\newblock Inform. Process. Lett. \textbf{25} (1987), 127--132.
+\bibitem{buhrman-fortnow-laplante}
+H.~Buhrman, L.~Fortnow, and S.~Laplante,
+\newblock \emph{Resource-bounded {K}olmogorov complexity revisited},
+\newblock SIAM J. Comput. \textbf{31} (2002), no.~3, 887--905.
+\bibitem{buhrman-lee-vanmelkebeek}
+H.~Buhrman, T.~Lee, and D.~van Melkebeek,
+\newblock \emph{Language compression and pseudorandom generators},
+\newblock Comput. Complexity \textbf{14} (2005), 228--255.
+\end{thebibliography}
+
+\end{document}
