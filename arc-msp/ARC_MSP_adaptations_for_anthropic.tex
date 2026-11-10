@@ -1,0 +1,118 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{hyperref}
+\usepackage{cleveref}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{question}{Question}
+\crefname{question}{Question}{Questions}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{ARC MSP: Adaptations for Anthropic}
+\author{}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+In~\cite{MSP-ARC} the authors designed an estimator which estimates the expected output of a wide random MLP with Gaussian (He) initialisation.
+More specifically, they proved the following theorem.
+
+\begin{theorem}[{\cite[Theorems~5.1 and~5.2]{MSP-ARC}}]\label{thm:msp-arc-init}
+Fix an integer $L \geq 0$ and polynomial activation functions $\phi_1, \dots, \phi_L$. Given weights $\theta \in \mathbb{R}^{(L+1) \times n \times n}$ drawn independently from $\mathcal{N}\big(0, \frac{2}{n}\big)$ for an integer $n \geq 1$, write $M_\theta \colon \mathbb{R}^n \to \mathbb{R}^n$ for the MLP with $L$ hidden layers, width $n$, activation functions $\phi_1, \dots, \phi_L$ and weights $\theta$.\footnote{That is, $M_\theta(x) = W^{(L+1)} \phi_L\big(W^{(L)} \cdots \phi_2\big(W^{(2)} \phi_1\big(W^{(1)} x\big)\big) \cdots\big)$ for $\theta = \big(W^{(1)}, \dots, W^{(L+1)}\big)$, with the activation functions applied coordinatewise and no bias terms~\cite[Section~2.1]{MSP-ARC}.} Then there is an estimation procedure $G(\theta, \varepsilon)$ such that for every noticeable\footnote{That is, $\varepsilon(n) \geq n^{-k}$ for some $k \geq 0$ and all sufficiently large $n$.} function $0 < \varepsilon(n) \leq 1$ and every output index $i$, as $n \to \infty$,
+\[
+    \mathbb{E}_\theta\Big[ \big( G(\theta, \varepsilon(n))_i - \mathbb{E}_{X \sim \mathcal{N}(0, I_n)}[M_\theta(X)]_i \big)^2 \Big] = O\big(\varepsilon(n)^2\big)
+\]
+and $G(\theta, \varepsilon)$ runs in time $O(n^2/\varepsilon^2)$. If we also require that $\varepsilon(n)^2 = O(1/n^2)$, then $G(\theta, \varepsilon)$ can be made to run in time $O(n/\varepsilon^2)$.
+\end{theorem}
+
+For comparison, Monte Carlo sampling with $\lceil 1/\varepsilon^2 \rceil$ samples achieves the same mean squared error in time $\Theta(n^2/\varepsilon^2)$~\cite[Section~2.3]{MSP-ARC}. This shows that at initialisation their estimator can outperform random sampling. A question they leave open~\cite[Section~7.2]{MSP-ARC} is whether their methods can be adapted to outperform sampling throughout training. 
+A common heuristic, supported in idealised settings and by experiments~\cite{mandt2017,mingard2021}, is that the weights at the end of training are distributed approximately according to a (localised) Bayesian posterior. 
+It is not exact, since SGD's anisotropic gradient noise changes its stationary distribution~\cite{chaudhari2018}. 
+This distribution on the weights is used in singular learning theory~\cite{lau2025,chen2023} to probe the local loss landscape geometry.
+The problem we propose is whether the methods from \cite{MSP-ARC} can be used to prove that \Cref{thm:msp-arc-init} holds when the weights are distributed according to the Gibbs posterior of a fixed dataset, with a Gaussian prior, which is the exact distribution SLT uses for probing the local geometry.
+\begin{question}\label{q:msp-gibbs}
+Fix an integer $L \geq 0$ and polynomial activation functions $\phi_1, \dots, \phi_L$, and for each $n \geq 1$ fix a dataset $\mathcal{D} = \{(x_j, y_j)\}_{j=1}^{m} \subset \mathbb{R}^n \times \mathbb{R}^n$, a loss function $\ell \colon \mathbb{R}^n \times \mathbb{R}^n \to \mathbb{R}$ that is bounded below, a centre $\theta_0 \in \mathbb{R}^{(L+1) \times n \times n}$, a localisation strength $\gamma > 0$ and an inverse temperature $\beta \geq 0$. Let $p_0$ denote the density of the Gaussian $\mathcal{N}(\theta_0, \gamma^{-1} I)$ on $\mathbb{R}^{(L+1) \times n \times n}$, so that $p_0(\theta) \propto \exp\big( -\frac{\gamma}{2} \|\theta - \theta_0\|^2 \big)$, and let
+\[
+    \pi_{\beta, \mathcal{D}}(\theta) \propto \exp\Big( -\beta \sum_{j=1}^{m} \ell\big(M_\theta(x_j), y_j\big) \Big)\, p_0(\theta)
+\]
+be the corresponding Gibbs posterior. Is there an estimation procedure $G_{\beta, \mathcal{D}}(\theta, \varepsilon)$, which may also depend on $\ell$, $\theta_0$ and $\gamma$, such that for every noticeable function $0 < \varepsilon(n) \leq 1$ with $\varepsilon(n)^2 = O(1/n^2)$ and every output index $i$, as $n \to \infty$,
+\[
+    \mathbb{E}_{\theta \sim \pi_{\beta, \mathcal{D}}}\Big[ \big( G_{\beta, \mathcal{D}}(\theta, \varepsilon(n))_i - \mathbb{E}_{X \sim \mathcal{N}(0, I_n)}[M_\theta(X)]_i \big)^2 \Big] = O\big(\varepsilon(n)^2\big),
+\]
+and which runs in time $o\big(n^2/\varepsilon(n)^2\big)$, i.e.\ faster than the $\Theta(n^2/\varepsilon^2)$ Monte Carlo baseline? In particular, is this achieved by the estimation procedure $G$ of \Cref{thm:msp-arc-init} itself, used unchanged with $\theta \sim \pi_{\beta, \mathcal{D}}$? For which centres $\theta_0$, losses $\ell$ and regimes of $m$, $\beta$ and $\gamma$ as functions of $n$ is this possible?
+\end{question}
+
+\begin{remark}[Progress on \Cref{q:msp-gibbs}]
+The unpublished note~\cite{gibbs-transfer} answers \Cref{q:msp-gibbs} in the affirmative for all outputs outside the loss, with the estimators of~\cite{MSP-ARC} used unchanged, in the following case: $\theta_0 = 0$ and $\gamma = n/2$, so that $p_0$ is the density of the weights in \Cref{thm:msp-arc-init}; a fixed $\beta > 0$; the squared loss $\ell(z, y) = \sum_{o \in S} (z_o - y_o)^2$ on a set $S$ of output coordinates of fixed size; inputs and targets with $\|x_j\|^2 \leq C_x n$ and $|(y_j)_o| \leq y_{\max}$ for fixed $C_x$ and $y_{\max}$; and $n \geq m^\kappa$ for a fixed $\kappa > 2 + \max\{1, (q-1)L\}$, where $q$ is the maximal degree of $\phi_1, \dots, \phi_L$. Precisely~\cite[Theorem~C and Corollary~C.1]{gibbs-transfer}, the estimator of~\cite{MSP-ARC} of cumulant order $K$ (its polynomial or basic Hermite algorithm), whose mean squared error under $p_0$ is $O(n^{-K})$, has mean squared error $O(n^{-K})$ under $\pi_{\beta, \mathcal{D}}$ for every output $i \notin S$. For $i \in S$ its mean squared error is $O(m\, n^{-K})$, and the estimator of cumulant order $K + 1$ brings this back to $O(n^{-K})$. All implied constants are independent of $n$, $m$ and the data.
+\end{remark}
+
+In~\cite{max-draft}, under a series of approximations, the author proves that at any point in training the weights of an MLP are distributed according to a Gaussian whose mean and covariance change according to 
+\begin{equation} \label{eq:2RDM-law}
+\begin{gathered}
+    \theta \sim \mathcal{N}\big(\bar\theta(t), \Sigma(t, \tau)\big), \\
+    \frac{d}{dt} \bar\theta(t) = -\nabla \mathcal{L}\big(\bar\theta(t)\big), \qquad
+    \Sigma(t, \tau) = \int_0^\tau e^{-H(t) s}\, D(t)\, e^{-H(t) s} \, ds,
+\end{gathered}
+\end{equation}
+see~\cite[Definition~2.1 and eq.~(67)]{max-draft}. Here $\theta$ is viewed as a vector in $\mathbb{R}^{(L+1) n^2}$. The flow is started at the left end $a := t - \Delta/2$ of a short window $[t - \Delta/2, t + \Delta/2]$ around $t$, from the weights $W_a$ of the SGD trajectory at that time, $\bar\theta(a) = W_a$, and the law~\eqref{eq:2RDM-law} is conditional on $W_a$. Moreover, for the dataset $\mathcal{D}$ and the loss $\ell$ of \Cref{q:msp-gibbs}, now assumed twice continuously differentiable,
+\[
+    \ell_j(\theta) = \ell\big(M_\theta(x_j), y_j\big), \qquad
+    \mathcal{L} = \frac{1}{m} \sum_{j=1}^{m} \ell_j, \qquad
+    \xi_j = \nabla \ell_j - \nabla \mathcal{L}, \qquad
+    C^{\mathrm{grad}} = \frac{1}{m} \sum_{j=1}^{m} \xi_j \xi_j^\top,
+\]
+\[
+    H(t) = \nabla^2 \mathcal{L}\big(\bar\theta(t)\big), \qquad
+    D(t) = \frac{\eta}{b}\, C^{\mathrm{grad}}\big(\bar\theta(t)\big),
+\]
+where $\eta$ is the learning rate and $b$ the batch size of SGD, each batch consisting of $b$ independent uniform draws from $\mathcal{D}$. The trajectory time $t$ corresponds to $t/\eta$ steps of SGD, and $\tau > 0$ is a duration of local time over which the SGD noise accumulates around the point $\bar\theta(t)$, with the Hessian $H(t)$ and the diffusion $D(t)$ frozen at their values there. Thus the mean of the law is the noise-free gradient flow of the training loss, restarted from the actual weights at the beginning of the window, and its covariance is the SGD noise accumulated over local time $\tau$ and shaped by the local Hessian.
+
+Can the methods of~\cite{MSP-ARC} be adapted to prove a version of \Cref{thm:msp-arc-init} where the weights are distributed according to~\eqref{eq:2RDM-law}?
+\begin{question}\label{q:msp-2RDM}
+Fix an integer $L \geq 0$, polynomial activation functions $\phi_1, \dots, \phi_L$, a dataset $\mathcal{D}$ and a twice continuously differentiable loss function $\ell$ as in \Cref{q:msp-gibbs}, a learning rate $\eta > 0$, a batch size $b \geq 1$, a trajectory time $t > 0$, a window length $\Delta \in (0, 2t]$, weights $W_a \in \mathbb{R}^{(L+1) \times n \times n}$ at the start $a = t - \Delta/2$ of the window, and a local duration $\tau > 0$, and let $\mu_{t, \tau} := \mathcal{N}\big(\bar\theta(t), \Sigma(t, \tau)\big)$ be the law~\eqref{eq:2RDM-law} given $W_a$. Is there an estimation procedure $G_{t, \tau}(\theta, \varepsilon)$, which may depend on $\mathcal{D}$, $\ell$, $\eta$, $b$, $t$, $\Delta$, $W_a$ and $\tau$, such that for every noticeable function $0 < \varepsilon(n) \leq 1$ with $\varepsilon(n)^2 = O(1/n^2)$ and every output index $i$, as $n \to \infty$,
+\[
+    \mathbb{E}_{\theta \sim \mu_{t, \tau}}\Big[ \big( G_{t, \tau}(\theta, \varepsilon(n))_i - \mathbb{E}_{X \sim \mathcal{N}(0, I_n)}[M_\theta(X)]_i \big)^2 \Big] = O\big(\varepsilon(n)^2\big),
+\]
+and which runs in time $o\big(n^2/\varepsilon(n)^2\big)$, i.e.\ faster than the $\Theta(n^2/\varepsilon^2)$ Monte Carlo baseline? In particular, is this achieved by the estimation procedure $G$ of \Cref{thm:msp-arc-init} itself, used unchanged with $\theta \sim \mu_{t, \tau}$? For which weights $W_a$, losses $\ell$ and regimes of $\Delta$, $\tau$, $m$ and $\eta/b$ as functions of $n$ is this possible?
+\end{question}
+
+
+
+\begin{thebibliography}{9}
+\bibitem{MSP-ARC}
+W.~Wu, V.~Lecomte, M.~Winer, G.~Robinson, J.~Hilton, and P.~Christiano,
+\newblock \emph{Estimating the expected output of wide random {MLPs} more efficiently than sampling},
+\newblock preprint, 2026, \href{https://arxiv.org/abs/2605.05179}{arXiv:2605.05179}.
+\bibitem{mandt2017}
+S.~Mandt, M.~D.~Hoffman, and D.~M.~Blei,
+\newblock \emph{Stochastic Gradient Descent as Approximate {B}ayesian Inference},
+\newblock J. Mach. Learn. Res. \textbf{18} (2017), no.~134, 1--35, \href{https://arxiv.org/abs/1704.04289}{arXiv:1704.04289}.
+\bibitem{mingard2021}
+C.~Mingard, G.~Valle-P\'erez, J.~Skalse, and A.~A.~Louis,
+\newblock \emph{Is {SGD} a {B}ayesian sampler? {W}ell, almost},
+\newblock J. Mach. Learn. Res. \textbf{22} (2021), no.~79, 1--64, \href{https://arxiv.org/abs/2006.15191}{arXiv:2006.15191}.
+\bibitem{chaudhari2018}
+P.~Chaudhari and S.~Soatto,
+\newblock \emph{Stochastic gradient descent performs variational inference, converges to limit cycles for deep networks},
+\newblock ICLR 2018, \href{https://arxiv.org/abs/1710.11029}{arXiv:1710.11029}.
+\bibitem{lau2025}
+E.~Lau, Z.~Furman, G.~Wang, D.~Murfet, and S.~Wei,
+\newblock \emph{The Local Learning Coefficient: A Singularity-Aware Complexity Measure},
+\newblock Proc. AISTATS 2025, PMLR \textbf{258} (2025), 244--252, \href{https://arxiv.org/abs/2308.12108}{arXiv:2308.12108}.
+\bibitem{chen2023}
+Z.~Chen, E.~Lau, J.~Mendel, S.~Wei, and D.~Murfet,
+\newblock \emph{Dynamical versus {B}ayesian Phase Transitions in a Toy Model of Superposition},
+\newblock preprint, 2023, \href{https://arxiv.org/abs/2310.06301}{arXiv:2310.06301}.
+\bibitem{gibbs-transfer}
+\emph{Transfer of Theorem~5.1 of Wu et al.\ (arXiv:2605.05179) to a Gibbs posterior: an unconditional theorem when the width is a power of the data set size},
+\newblock unpublished note, version of 10 November 2026.
+\bibitem{max-draft}
+M.~Hennick,
+\newblock \emph{Diffusion-to-Diffusion Dynamics as a Basis for Learning},
+\newblock draft, version of 7 November 2026.
+\end{thebibliography}
+
+\end{document}
