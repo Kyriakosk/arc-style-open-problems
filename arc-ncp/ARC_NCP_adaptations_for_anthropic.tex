@@ -126,6 +126,16 @@ In the other direction, De Bona~\cite{debona2025} showed that $\mathrm{NCP}(1/10
 \end{enumerate}
 \end{question}
 
+\subsection*{Relaxed completeness: a few-coincidences principle}
+
+We can also relax completeness. For $\varepsilon=\varepsilon(n)\in[0,1]$, let $\mathrm{FCP}(\varepsilon)$ be \Cref{conj:ncp} but with completeness ``For at least a $1-\varepsilon(n)$ fraction of circuits drawn from $U_n$ conditioned on $P(C)$, there is a certificate $\pi$ with $V(C,\pi)=1$.'' Define $\mathrm{CliqueFCP}(\varepsilon)$ analogously.
+
+\begin{question}\label{q:fcp}
+For which functions $\varepsilon(n)$ does $\mathrm{FCP}(\varepsilon)$ hold? In particular, does it hold for $\varepsilon=0.01$, or for some $\varepsilon(n)\to0$?
+For the clique version, simply counting edges gives $\mathrm{CliqueFCP}(\varepsilon)$ for $\varepsilon(n)=\exp[-\Omega(n^2/\log^8 n)]$. What are the best bounds obtainable for $\mathrm{CliqueFCP}(\varepsilon)$ and $\mathrm{FCP}(\varepsilon)$?
+\end{question}
+
+
 \subsection*{Towards a refutation}
 
 \begin{question}\label{q:refutation}
@@ -209,3 +219,4 @@ H.~Buhrman, T.~Lee, and D.~van Melkebeek,
 \end{thebibliography}
 
 \end{document}
+
